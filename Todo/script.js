@@ -1,13 +1,12 @@
-
-
 const form = document.getElementById('form');
 const deleteBtn = document.getElementById('btn-del');
 const checkboxInput = document.getElementById('checkbox-input');
 const tbody = document.getElementById('tbody');
+let BASE_URL = 'http://localhost:3000';
 let targetData = {};
 let addFlag = true;
-
-let arr = [];
+let active;
+let arr = getData(BASE_URL, 'users');
 
 function createRow(arr) {
   tbody.innerHTML = '';
@@ -43,30 +42,36 @@ function createRow(arr) {
     tbody.append(tr);
   });
 }
+
+arr.then((response) => createRow(response));
+
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   if (
     event.target.firstname.value.trim() &&
     event.target.lastname.value.trim()
   ) {
-    addFlag ? addData(event) : applyChange(event, targetData);
+    addFlag ? addData(event) : applyChange(event);
   }
 });
 
 function addData(event) {
-  arr.push({
+  let data = {
     firstname: event.target.firstname.value,
     lastname: event.target.lastname.value,
     id: Date.now(),
     isChecked: false,
+  };
+  arr.then((response) => {
+    response.push(data);
+    createRow(response);
   });
-  console.log(arr);
-  createRow(arr);
+  sendData(BASE_URL, 'users', data);
   form.reset();
+  console.log(arr.then((response) => console.log(response)));
 }
 
 checkboxInput.addEventListener('change', (event) => {
-  console.log(event.target.checked);
   if (event.target.checked === true) {
     arr.forEach((item) => {
       item.isChecked = true;
@@ -100,28 +105,86 @@ function selectData(e) {
 }
 function deleteData(e) {
   const targetId = +e.closest('tr').dataset.id;
-  arr = arr.filter((item) => item.id !== targetId);
-  createRow(arr);
+  deleteItem(BASE_URL, 'users', targetId);
+  arr = arr.then((renponse) => {
+    return renponse.filter((item) => item.id !== targetId);
+  });
+  arr.then((response) => createRow(response));
 }
 
 function editData(e) {
-  const targetId = +e.closest('tr').dataset.id;
-  targetData = arr.find((item) => item.id === targetId);
-  form.firstname.value = targetData.firstname;
-  form.lastname.value = targetData.lastname;
+  active = +e.closest('tr').dataset.id;
+  arr
+    .then((response) => {
+      return response.find((item) => item.id === active);
+    })
+    .then((renponse) => {
+      form.firstname.value = renponse.firstname;
+      form.lastname.value = renponse.lastname;
+    });
   form.childNodes[5].innerHTML = 'Edit';
   addFlag = false;
 }
-function applyChange(event, targetData) {
-  arr.forEach((item) => {
-    if (item.id === targetData.id) {
-      item.firstname = event.target.firstname.value;
-      item.lastname = event.target.lastname.value;
-    }
+function applyChange(event) {
+  arr.then((response) => {
+    response.forEach((item) => {
+      if (item.id === active) {
+        item.firstname = event.target.firstname.value;
+        item.lastname = event.target.lastname.value;
+        Update(BASE_URL, 'users', item);
+      }
+    });
+    createRow(response);
+    form.reset();
   });
   event.submitter.innerHTML = 'Add';
   addFlag = true;
-  createRow(arr);
-  form.reset();
 }
 
+//api
+
+async function sendData(URL, endpoint, data) {
+  try {
+    let send = await fetch(`${URL}/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function getData(URL, endpoint) {
+  try {
+    let response = await fetch(`${URL}/${endpoint}`);
+    return await response.json();
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function deleteItem(URL, endpoint, id) {
+  try {
+    let send = await fetch(`${URL}/${endpoint}/${id}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
+async function Update(URL, endpoint, item) {
+  try {
+    let send = await fetch(`${URL}/${endpoint}/${item.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(item),
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}

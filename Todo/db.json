@@ -1,3 +1,10 @@
 {
-  "users": []
+  "users": [
+    {
+      "firstname": "Myra",
+      "lastname": "Hubbard",
+      "id": 1678628510207,
+      "isChecked": false
+    }
+  ]
 }
