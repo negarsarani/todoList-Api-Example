@@ -1,5 +1,4 @@
-import './style.css'
-'use strict';
+
 
 const form = document.getElementById('form');
 const deleteBtn = document.getElementById('btn-del');
